@@ -8,7 +8,7 @@
 sudo apt update -y
 			
 # Remove all installed java
-sudo apt remove java*
+sudo apt remove java* -y
 
 		
 # Execute the following command to install the default Java Runtime Environment (JRE), which will install the JRE from OpenJDK 11:
