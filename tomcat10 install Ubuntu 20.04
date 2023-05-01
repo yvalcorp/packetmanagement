@@ -1,0 +1,99 @@
+			1. Setting up a Tomcat User and group
+		# By supplying /bin/false as the user’s default shell, you ensure that it’s not possible to log in as tomcat.
+		sudo useradd -r -m -U -d /opt/tomcat -s /bin/false tomcat 
+		
+			2. Run system update
+		sudo apt update -y
+		
+			3. Install Java | Prerequisite
+		sudo apt install default-jdk -y
+		
+			4. Download Tomcat Package
+		cd /tmp
+		sudo wget 
+		wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.0.8/bin/apache-tomcat-10.0.8.tar.gz
+		
+			5. Install Tomcat
+		 sudo tar xzvf apache-tomcat-10.0.8.tar.gz -C /opt/tomcat --strip-components=1
+		
+		
+			6. Grant tomcat ownership over the extracted installation
+		sudo chown -R tomcat:tomcat /opt/tomcat/
+		sudo chmod -R u+x /opt/tomcat/bin
+	
+	    C - Configure Admin Users
+
+			1. Edit tomcat-users.xml file
+		sudo nano /opt/tomcat/conf/tomcat-users.xml
+		
+			2. Replace the highlighted password with your own or add another line'
+			<role rolename="manager-gui" />
+			<user username="manager" password="manager_password" roles="manager-gui" />
+			
+			<role rolename="admin-gui" />
+			<user username="admin" password="admin_password" roles="manager-gui,admin-gui" />
+		
+			3. By default, Tomcat is configured to restrict access to the admin pages, unless the connection comes from the server itself. To access those pages with the users you just defined, you will need to edit config files for those pages.
+			To remove the restriction for the Manager page, open its config file for editing
+			
+			sudo nano /opt/tomcat/webapps/manager/META-INF/context.xml
+			
+			4. Comment out the Valve definition, as shown:
+			
+			...
+			<Context antiResourceLocking="false" privileged="true" >
+			  <CookieProcessor className="org.apache.tomcat.util.http.Rfc6265CookieProcessor"
+			                   sameSiteCookies="strict" />
+			<!--  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+			         allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" /> -->
+			  <Manager sessionAttributeValueClassNameFilter="java\.lang\.(?:Boolean|Integer|Long|Number|String)|org\.apache\.catalina\.filters\.Csr>
+			</Context>
+			
+			5. Repeat the same process for the HOSTMANAGER
+			sudo nano /opt/tomcat/webapps/host-manager/META-INF/context.xml
+			
+			
+	D - Creating a systemd service
+			1. List java Installation
+			sudo update-java-alternatives -l
+	
+			2. The output will be similar to this:
+			
+			Output
+			java-1.11.0-openjdk-amd64      1111       /usr/lib/jvm/java-1.11.0-openjdk-amd64
+			
+			
+			3. You’ll store the tomcat service in a file named tomcat.service, under /etc/systemd/system. Create the file for editing by running:
+			sudo nano /etc/systemd/system/tomcat.service
+			
+			Add the following lines
+			
+			[Unit]
+			Description=Tomcat
+			After=network.target
+			
+			[Service]
+			Type=forking
+			User=tomcat
+			Group=tomcat
+			
+			Environment="JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64"
+			Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom"
+			Environment="CATALINA_BASE=/opt/tomcat"
+			Environment="CATALINA_HOME=/opt/tomcat"
+			Environment="CATALINA_PID=/opt/tomcat/temp/tomcat.pid"
+			Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+			
+			ExecStart=/opt/tomcat/bin/startup.sh
+			ExecStop=/opt/tomcat/bin/shutdown.sh
+			RestartSec=10
+			Restart=always
+			
+			[Install]
+			WantedBy=multi-user.target
+			
+			4. Exit and reload systemd
+			sudo systemctl daemon-reload
+			
+			5. Enable tomcat
+			sudo systemctl enable tomcat
