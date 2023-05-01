@@ -31,4 +31,4 @@ sudo apt install jenkins -y
 			
 # Let’s start Jenkins by using systemctl:
 sudo systemctl start jenkins
-sudo systemctl status jenkins
+sudo systemctl enable jenkins
